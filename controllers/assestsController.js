@@ -1,4 +1,5 @@
 import Asset from "../models/Asstes.js";
+import mongoose from "mongoose";
 
 // CREATE campaign with posts
 export const createAssets = async (req, res) => {
@@ -25,7 +26,25 @@ export const createAssets = async (req, res) => {
 // GET all campaigns
 export const getAssets = async (req, res) => {
     try {
-        const assets = await Asset.find();
+        const { name, type, id } = req.query;
+
+
+        let filter = {};
+
+        if (name) {
+
+            filter.name = { $regex: name, $options: "i" };
+        }
+
+        if (type) {
+            filter.type = { $regex: type, $options: "i" };
+        }
+
+        if (id) {
+            filter._id = id;
+        }
+
+        const assets = await Asset.find(filter);
         res.status(200).json(assets);
     } catch (error) {
         console.error(error);
@@ -33,14 +52,19 @@ export const getAssets = async (req, res) => {
     }
 };
 
+
 // UPDATE campaign
 export const updateAsset = async (req, res) => {
     try {
-        const { id } = req.params;
+        const { id } = req.params;  // this is _id
         const { name, type, posts } = req.body;
 
-        const updatedAsset = await Asset.findOneAndUpdate(
-            { id },
+        if (!mongoose.Types.ObjectId.isValid(id)) {
+            return res.status(400).json({ message: "Invalid ID" });
+        }
+
+        const updatedAsset = await Asset.findByIdAndUpdate(
+            id,
             { name, type, posts },
             { new: true, runValidators: true }
         );
@@ -56,12 +80,17 @@ export const updateAsset = async (req, res) => {
     }
 };
 
+
 // DELETE campaign
 export const deleteAsset = async (req, res) => {
     try {
         const { id } = req.params;
 
-        const deletedAsset = await Asset.findOneAndDelete({ id });
+        if (!mongoose.Types.ObjectId.isValid(id)) {
+            return res.status(400).json({ message: "Invalid ID" });
+        }
+
+        const deletedAsset = await Asset.findByIdAndDelete(id);
 
         if (!deletedAsset) {
             return res.status(404).json({ message: "Campaign not found" });
