@@ -33,13 +33,19 @@ export const createAssets = async (req, res) => {
 // GET all campaigns
 export const getAssets = async (req, res) => {
     try {
-        const { name, type, id } = req.query;
-
+        const { id, name, type } = req.query;
 
         let filter = {};
 
-        if (name) {
+        // If id is provided and is valid, get by _id
+        if (id) {
+            if (!mongoose.Types.ObjectId.isValid(id)) {
+                return res.status(400).json({ message: "Invalid ID" });
+            }
+            filter._id = id;
+        }
 
+        if (name) {
             filter.name = { $regex: name, $options: "i" };
         }
 
@@ -47,17 +53,19 @@ export const getAssets = async (req, res) => {
             filter.type = { $regex: type, $options: "i" };
         }
 
-        if (id) {
-            filter._id = id;
+        const assets = await Asset.find(filter);
+
+        if (id && assets.length === 0) {
+            return res.status(404).json({ message: "Campaign not found" });
         }
 
-        const assets = await Asset.find(filter);
         res.status(200).json(assets);
     } catch (error) {
         console.error(error);
         res.status(500).json({ message: "Error fetching campaigns" });
     }
 };
+
 
 
 // UPDATE campaign
