@@ -4,24 +4,31 @@ import mongoose from "mongoose";
 // CREATE campaign with posts
 export const createAssets = async (req, res) => {
     try {
-        const { id, name, type, posts } = req.body;
+        let campaigns = Array.isArray(req.body) ? req.body : [req.body];
+        let savedAssets = [];
 
-        if (!id || !name || !type) {
-            return res.status(400).json({ message: "ID, name and type are required" });
+        for (const campaign of campaigns) {
+            const { id, name, type, posts } = campaign;
+
+            if (!id || !name || !type) {
+                return res.status(400).json({ message: "ID, name and type are required" });
+            }
+
+            const newAsset = new Asset({ id, name, type, posts });
+            const savedAsset = await newAsset.save();
+            savedAssets.push(savedAsset);
         }
 
-        const newAsset = new Asset({ id, name, type, posts });
-        const savedAsset = await newAsset.save();
-
         res.status(201).json({
-            message: "Campaign created successfully",
-            asset: savedAsset,
+            message: "Campaign(s) created successfully",
+            assets: savedAssets,
         });
     } catch (error) {
         console.error(error);
         res.status(500).json({ message: "Error creating campaign" });
     }
 };
+
 
 // GET all campaigns
 export const getAssets = async (req, res) => {
